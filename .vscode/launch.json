@@ -1,0 +1,40 @@
+{
+    // Use IntelliSense para saber los atributos posibles.
+    // Mantenga el puntero para ver las descripciones de los existentes atributos.
+    // Para más información, visite: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Depurador de Python: Archivo actual",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Depurador de Python: Archivo actual con argumentos",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "args": [
+                // "${command:pickArgs}"
+                "-f",
+                "src\\main\\java\\Python\\julio.py"
+            ]
+        },
+        {
+            "type": "java",
+            "name": "Depurador de Java: Current File",
+            "request": "launch",
+            "mainClass": "${file}"
+        },
+        {
+            "type": "java",
+            "name": "Depurador de Java: App",
+            "request": "launch",
+            "mainClass": "com.mycompany.ui_for_python/com.mycompany.ui_for_python.App",
+            "projectName": "UI_for_Python"
+        },
+    ]
+}

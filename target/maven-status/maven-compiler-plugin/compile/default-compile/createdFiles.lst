@@ -1,0 +1,4 @@
+module-info.class
+com\mycompany\ui_for_python\SecondaryController.class
+com\mycompany\ui_for_python\App.class
+com\mycompany\ui_for_python\PrimaryController.class
