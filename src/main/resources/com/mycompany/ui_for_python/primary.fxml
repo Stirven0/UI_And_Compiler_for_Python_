@@ -109,7 +109,7 @@
                   <FontAwesomeIcon glyphName="PAUSE" />
                </graphic>
             </Button>
-            <Button fx:id="arbol" mnemonicParsing="false">
+            <Button fx:id="arbol" mnemonicParsing="false" onAction="#showArbol">
                <graphic>
                   <FontAwesomeIcon glyphName="SHARE_ALT" rotate="90.0" />
                </graphic>

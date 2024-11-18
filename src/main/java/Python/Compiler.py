@@ -33,6 +33,7 @@ BOOLEAN_LITERALS = {'True', 'False'}
 NULL_LITERAL = {'None', 'Null'}
 LOGICAL_OPERATORS = {'and', 'or', 'not'}
 
+
 class Lexer:
     def __init__(self, input_string):
         self.input = input_string
@@ -41,6 +42,17 @@ class Lexer:
         self.indent_stack = [0]  # Pila para manejar niveles de indentación
         self.line_start = True   # Para manejar la detección de indentaciones en nuevas líneas
 
+    def tokens(self):
+        tokens = []
+        token = self.get_next_token()
+        
+        while token['type'] != TOKEN_TYPES['EOF']:
+            tokens.append(token)
+            token = self.get_next_token()
+        
+        tokens.append(token)
+        return tokens
+            
     def advance(self):
         """Mueve la posición un carácter hacia adelante."""
         self.position += 1
@@ -206,7 +218,6 @@ class Lexer:
             return {'type': TOKEN_TYPES['DEDENT'], 'value': None}
 
         return {'type': TOKEN_TYPES['EOF'], 'value': None}
-
 
 class Parser:
     def __init__(self, lexer):
@@ -376,7 +387,6 @@ class Parser:
     
         return {'type': 'RETURN_STATEMENT', 'value': return_expr}
 
-
     def if_statement(self):
         """Reconoce una declaración `if`, junto con `elif` y `else` opcionales."""
         self.eat(TOKEN_TYPES['KEYWORD'])  # Consume la palabra clave `if`
@@ -407,7 +417,6 @@ class Parser:
             'elif_blocks': elif_blocks,
             'else_block': else_block
         }
-
 
     def while_statement(self):
         """Reconoce una declaración `while`."""
@@ -448,7 +457,6 @@ class Parser:
 
         self.eat(TOKEN_TYPES['DEDENT'])  # Comemos la dedentación
         return {'type': 'BLOCK', 'body': statements}
-
 
 class SemanticAnalyzer:
     def __init__(self, parse_tree):
@@ -621,34 +629,45 @@ class SemanticAnalyzer:
 
 def main():
     print('llame a este archivo usando el comando "python Lexer.py -f ruta/del/archivo.py"\npara analizar codigo no estatico')
-    parser = argparse.ArgumentParser(description='Lexer')
+    parser = argparse.ArgumentParser(description='Compyler for Python By: Stirven')
     parser.add_argument('-f', '--file', type=str, help='Archivo a procesar')
+    parser.add_argument('-l', '--lexer', type=str, help='Retorna una lista de TOKENS')
+    parser.add_argument('-p', '--parser', type=str, help='Retorna el arbol sintactico en formato Json')
+    parser.add_argument('-s', '--semantic', type=str, help='Retorna latabla semantica')
     args = parser.parse_args()
-
     if args.file:
         with open(args.file, 'r') as file:
             input_string = file.read()
     else:
         input_string = input("Ingrese el código a analizar: ")
 
+    
     lexer = Lexer(input_string)
+    
+    if args.lexer:
+        with open("outputLexer.txt", "w") as file:
+            file.write(lexer.tokens())
+            
     parser = Parser(lexer)
+    
+    if args.parser:
+        with open("outputParser.txt", "w") as file:
+            file.write(parser.parse())
+            
+    semantic_analyzer = SemanticAnalyzer(parser.parse())
+    
+    if args.semantic:
+        with open("outputSemantic.txt", "w") as file:
+            file.write(lexer.tokens())
+
+        
     # parse_tree = parser.parse()
     # semantic_analyzer = SemanticAnalyzer(parse_tree)
+    # for token in lexer.tokens():
+    #     print(token)
+    # print(lexer.tokens())
     print(parser.parse())
         
-
-    # while True:
-    #     token = lexer.get_next_token()
-    #     if isinstance(token, list):
-    #         for t in token:
-    #             print(t)
-    #             if t['type'] == TOKEN_TYPES['EOF']:
-    #                 return
-    #     else:
-    #         print(token)
-    #         if token['type'] == TOKEN_TYPES['EOF']:
-    #             break
 
 if __name__ == '__main__':
     main()

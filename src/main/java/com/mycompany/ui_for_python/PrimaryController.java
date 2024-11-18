@@ -7,6 +7,7 @@ import java.util.ResourceBundle;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Accordion;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Menu;
@@ -15,16 +16,20 @@ import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TreeView;
+import javafx.scene.control.Alert.AlertType;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.control.TitledPane;
 import javafx.scene.control.TreeCell;
 import javafx.scene.control.TreeItem;
 import javafx.stage.DirectoryChooser;
+
+import java.util.ArrayList;
 import java.util.List;
 
 public class PrimaryController implements Initializable {
 
     File selectedDirectory;
+    List<File> fileList = new ArrayList<>();
     
     @FXML
     private Menu archivos_Recientes;
@@ -117,6 +122,7 @@ public class PrimaryController implements Initializable {
         directoryChooser.setTitle("Selecciona una carpeta");
 
         selectedDirectory = directoryChooser.showDialog(pause.getScene().getWindow());
+        listFiles();
 
         if (selectedDirectory != null) {
             String[] pach_folder_splited = selectedDirectory.getAbsolutePath().split("\\\\");
@@ -152,6 +158,29 @@ public class PrimaryController implements Initializable {
                 openFileInNewTab(selectedItem.getValue());
             }
         });
+    }
+
+    
+    public void listFiles() {
+
+        if (selectedDirectory.exists() && selectedDirectory.isDirectory()) {
+            listFilesRecursive(selectedDirectory, fileList);
+        }
+
+    }
+
+    private void listFilesRecursive(File directory, List<File> fileList) {
+        File[] files = directory.listFiles();
+
+        if (files != null) {
+            for (File file : files) {
+                if (file.isDirectory()) {
+                    listFilesRecursive(file, fileList);
+                } else {
+                    fileList.add(file);
+                }
+            }
+        }
     }
 
     private void openFileInNewTab(File file) {
@@ -212,14 +241,23 @@ public class PrimaryController implements Initializable {
         String archivoActual = selectedTab.getText();
 
         // Ruta del script de Python que deseas ejecutar
-        String pythonScript = "src/main/java/Python/Lexer.py"; // Cambiar por la ruta correcta del script Python
+        String pythonScript = "src/main/java/Python/Compiler.py"; // Cambiar por la ruta correcta del script Python
 
         // Ruta del archivo en la pestaña activa
         String rutaArchivoEnTab = "ruta/completa/al/archivo/"; // Cambiar por la ruta completa del archivo activo
 
-        for (File file : selectedDirectory.listFiles()) {
-            String name_file = file.getName();
-            if (name_file.compareTo(archivoActual) == 0) {
+        // for (File file : selectedDirectory.listFiles()) {
+        //     String name_file = file.getName();
+        //     if (name_file.compareTo(archivoActual) == 0) {
+        //         rutaArchivoEnTab = file.getAbsolutePath().toString();
+        //         break;
+        //     }
+        // }
+        // if (fileList.contains(archivoActual)) {
+        //     rutaArchivoEnTab = fileList.get(fileList.indexOf())
+        // }
+        for (File file : fileList) {
+            if (file.getName().compareTo(archivoActual) == 0) {
                 rutaArchivoEnTab = file.getAbsolutePath().toString();
                 break;
             }
@@ -257,6 +295,10 @@ public class PrimaryController implements Initializable {
             salida.setText("Error al ejecutar el script: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+    public void showArbol() {
+        Alert alert = new Alert(AlertType.INFORMATION);
+        alert.showAndWait();
     }
 
     private void addFilesToTreeItem(File directory, TreeItem<File> parentItem) {
