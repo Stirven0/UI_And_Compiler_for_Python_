@@ -12,6 +12,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuItem;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TextArea;
@@ -246,16 +247,6 @@ public class PrimaryController implements Initializable {
         // Ruta del archivo en la pestaña activa
         String rutaArchivoEnTab = "ruta/completa/al/archivo/"; // Cambiar por la ruta completa del archivo activo
 
-        // for (File file : selectedDirectory.listFiles()) {
-        //     String name_file = file.getName();
-        //     if (name_file.compareTo(archivoActual) == 0) {
-        //         rutaArchivoEnTab = file.getAbsolutePath().toString();
-        //         break;
-        //     }
-        // }
-        // if (fileList.contains(archivoActual)) {
-        //     rutaArchivoEnTab = fileList.get(fileList.indexOf())
-        // }
         for (File file : fileList) {
             if (file.getName().compareTo(archivoActual) == 0) {
                 rutaArchivoEnTab = file.getAbsolutePath().toString();
@@ -268,7 +259,10 @@ public class PrimaryController implements Initializable {
                 "python",      // Comando para ejecutar Python
                 pythonScript,  // Ruta del script de Python
                 "-f",          // Opción que deseas pasar
-                rutaArchivoEnTab // Ruta del archivo que está en el TabPanel
+                rutaArchivoEnTab, // Ruta del archivo que está en el TabPanel
+                "-l",
+                "-p",
+                "-s"
         );
 
         try {
@@ -296,9 +290,40 @@ public class PrimaryController implements Initializable {
             e.printStackTrace();
         }
     }
+    
     public void showArbol() {
-        Alert alert = new Alert(AlertType.INFORMATION);
-        alert.showAndWait();
+        StringBuilder content = new StringBuilder();
+        // Leer el archivo 
+
+        for (File file : fileList) {
+            if (file.getName().compareTo("outputLexer.txt") == 0){
+
+                try (BufferedReader br = new BufferedReader(new FileReader(file.getAbsolutePath()))) {
+                    String line;
+                    while ((line = br.readLine()) != null){
+                        content.append(line).append("\n");
+                    } 
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    content.append("Error al leer el archivo.");
+                }
+                TextArea textArea = new TextArea(content.toString());
+                textArea.setWrapText(true);
+                textArea.setEditable(false);
+
+                ScrollPane scrollPane = new ScrollPane(textArea);
+                scrollPane.setFitToWidth(true);
+                // scrollPane.setPrefSize(400, 300);
+                // Crear y mostrar el alerta con el contenido del archivo 
+                Alert alert = new Alert(AlertType.INFORMATION);
+                alert.setTitle("Contenido del Archivo");
+                alert.setHeaderText(null);
+                alert.getDialogPane().setContent(textArea);
+                alert.setResizable(true);
+                alert.showAndWait();
+                break;
+            }
+        }
     }
 
     private void addFilesToTreeItem(File directory, TreeItem<File> parentItem) {

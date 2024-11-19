@@ -18,9 +18,11 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "args": [
-                // "${command:pickArgs}"
                 "-f",
-                "src\\main\\java\\Python\\julio.py"
+                "src\\main\\java\\Python\\julio.py",
+                "-l",
+                "-p",
+                "-s"
             ]
         },
         {

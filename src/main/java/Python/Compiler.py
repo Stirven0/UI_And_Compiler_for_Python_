@@ -1,5 +1,7 @@
 import argparse
 import importlib
+import json
+
 # Definimos los tipos de tokens
 TOKEN_TYPES = {
     'NUMBER': 'NUMBER',
@@ -43,6 +45,8 @@ class Lexer:
         self.line_start = True   # Para manejar la detección de indentaciones en nuevas líneas
 
     def tokens(self):
+        inicialPosicion = self.position
+        inicialChar = self.current_char
         tokens = []
         token = self.get_next_token()
         
@@ -51,6 +55,8 @@ class Lexer:
             token = self.get_next_token()
         
         tokens.append(token)
+        self.position = inicialPosicion
+        self.current_char = inicialChar
         return tokens
             
     def advance(self):
@@ -104,12 +110,11 @@ class Lexer:
         elif id_str in LOGICAL_OPERATORS:
             return {'type': TOKEN_TYPES['OPERATOR'], 'value': id_str}
         elif id_str in BOOLEAN_LITERALS:
-            return {'type': TOKEN_TYPES['BOOLEAN'], 'value': id_str}
+            return {'type': TOKEN_TYPES['BOOLEAN'], 'value': id_str == 'True'}
         elif id_str in NULL_LITERAL:
             return {'type': TOKEN_TYPES['NULL'], 'value': None}
         else:
             return {'type': TOKEN_TYPES['IDENTIFIER'], 'value': id_str}
-
 
     def handle_indent_dedent(self):
         """Maneja indentación y dedentación."""
@@ -241,13 +246,28 @@ class Parser:
         else:
             self.error(token_type)
 
+    def save_state(self): 
+        """Guarda el estado actual del parser.""" 
+        return { 
+            'current_token': self.current_token,
+            'lexer_position': self.lexer.position,
+            'lexer_current_char': self.lexer.current_char
+        } 
+    def restore_state(self, state):
+        """Restaura el estado del parser."""
+        self.current_token = state['current_token']
+        self.lexer.position = state['lexer_position']
+        self.lexer.current_char = state['lexer_current_char']
+        
     def parse(self):
         """Regla de inicio del programa: un conjunto de declaraciones."""
+        initial_state = self.save_state()
         statements = []
         while self.current_token['type'] != TOKEN_TYPES['EOF']:
             statement = self.statement()
             if statement:
                 statements.append(statement)
+        self.restore_state(initial_state)
         return {'type': 'PROGRAM', 'body': statements}
 
     def statement(self):
@@ -293,7 +313,6 @@ class Parser:
         node = self.logical_or()
 
         return node
-
 
     def logical_or(self):
         """Reconoce expresiones que incluyen 'or'."""
@@ -461,6 +480,8 @@ class Parser:
 class SemanticAnalyzer:
     def __init__(self, parse_tree):
         self.symbol_table = {}
+        self.current_scope_stack = [self.symbol_table]
+        self.code_generator = IntermediateCodeGenerator()
         self.analyze(parse_tree)
 
     def analyze(self, node):
@@ -472,6 +493,12 @@ class SemanticAnalyzer:
         method = getattr(self, method_name, self.generic_analyze)
         return method(node)
 
+    def analyze_boolean(self, node):
+        # Verifica que el nodo tenga un valor booleano válido
+        if 'value' in node and isinstance(node['value'], bool):
+            return node['value']
+        else:
+            raise Exception(f"Valor booleano inválido: {node}")
 
     def generic_analyze(self, node):
         raise Exception(f"No hay método de análisis semántico para {node['type']}")
@@ -480,11 +507,20 @@ class SemanticAnalyzer:
         for statement in node['body']:
             self.analyze(statement)
 
+    def analyze_block(self, node):
+        # Un bloque es una lista de declaraciones
+        results = []
+        for statement in node['body']:
+            result = self.analyze(statement)
+            results.append(result)
+        return results
+
     def analyze_assignment(self, node):
         identifier = node['identifier']
         expression = node['expression']
         value = self.analyze(expression)
-        self.symbol_table[identifier] = value
+        self.current_scope_stack[-1][identifier] = value
+        self.code_generator.add_instruction(node['type'],value,None,identifier)
 
     def analyze_string(self, node):
         # Simplemente devolvemos el valor de la cadena
@@ -502,6 +538,8 @@ class SemanticAnalyzer:
         elif node['type'] == 'LOGICAL_OP':
             left = self.analyze(node['left'])
             right = self.analyze(node['right'])
+            temp_var = self.code_generator.new_temp()
+            self.code_generator.add_instruction(node['operator'], left, right, temp_var)
             if node['operator'] == 'and':
                 return left and right
             elif node['operator'] == 'or':
@@ -529,9 +567,9 @@ class SemanticAnalyzer:
 
     def analyze_identifier(self, node):
             identifier = node['value']
-            if identifier not in self.symbol_table:
+            if identifier not in self.current_scope_stack[-1]:
                 raise Exception(f"Variable no declarada: {identifier}")
-            return self.symbol_table[identifier]
+            return self.current_scope_stack[-1][identifier]
 
     def analyze_logical_op(self, node):
         left = self.analyze(node['left'])
@@ -567,7 +605,6 @@ class SemanticAnalyzer:
         else:
             raise Exception(f"Operador relacional desconocido: {node['operator']}")
 
-
     def analyze_member_access(self, node):
         object_node = node['object']
         member = node['member']
@@ -598,26 +635,33 @@ class SemanticAnalyzer:
         return {'condition': condition, 'block': block}
 
     def analyze_function_def(self, node):
+        
         func_name = node['name']
+        if func_name in self.symbol_table:
+            raise Exception(f"Funcion ya definida: {func_name}")
         params = node['params']
         block = node['block']
         # Registrar la función en la tabla de símbolos
-        self.symbol_table[func_name] = {'params': params, 'block': block}
+        symbol_table_local = {param: None for param in params}
+        self.current_scope_stack.append(symbol_table_local)
         
+        self.code_generator.add_instruction('function', func_name)
+        for param in params: 
+            self.code_generator.add_instruction('param', param)
         # Analizar y registrar los parámetros en la tabla de símbolos
-        for param in params:
-            self.symbol_table[param] = None  # Puedes inicializarlo con algún valor por defecto si es necesario
-        
         # Analizar el bloque de la función
-        for statement in block['body']:
-            self.analyze(statement)
         
-        return {'name': func_name, 'params': params, 'block': block}
-
+        self.analyze(block)
+            
+        self.current_scope_stack.pop()
+        self.symbol_table[func_name] = {'params': params, 'block': block}
+        # return {'name': func_name, 'params': params, 'block': block}
 
     def analyze_return_statement(self, node):
         return self.analyze(node['value'])
     
+    def getSymbolTable(self):
+        return self.symbol_table
 
     def analyze_import(self, node):
         module_name = node['module']
@@ -625,15 +669,40 @@ class SemanticAnalyzer:
         module = importlib.import_module(module_name)
         # Registrar el módulo importado y sus miembros en la tabla de símbolos
         self.symbol_table[module_name] = {name: getattr(module, name) for name in dir(module) if not name.startswith('_')}
-        return
+        # return
+
+class IntermediateCodeGenerator:
+    def __init__(self):
+        self.instructions = []
+        self.temp_count = 0
+
+    def new_temp(self):
+        self.temp_count += 1
+        return f"t{self.temp_count}"
+
+    def add_instruction(self, operation, arg1=None, arg2=None, result=None):
+        self.instructions.append({
+            "operation": operation,
+            "arg1": arg1,
+            "arg2": arg2,
+            "result": result
+        })
+
+    def get_instructions(self):
+        return self.instructions
+
+    def print_instructions(self):
+        for instruction in self.instructions:
+            print(f"{instruction['operation']} {instruction.get('arg1', '')} {instruction.get('arg2', '')} {instruction['result']}")
+
 
 def main():
     print('llame a este archivo usando el comando "python Lexer.py -f ruta/del/archivo.py"\npara analizar codigo no estatico')
     parser = argparse.ArgumentParser(description='Compyler for Python By: Stirven')
     parser.add_argument('-f', '--file', type=str, help='Archivo a procesar')
-    parser.add_argument('-l', '--lexer', type=str, help='Retorna una lista de TOKENS')
-    parser.add_argument('-p', '--parser', type=str, help='Retorna el arbol sintactico en formato Json')
-    parser.add_argument('-s', '--semantic', type=str, help='Retorna latabla semantica')
+    parser.add_argument('-l', '--lexer', action='store_true', help='Retorna una lista de TOKENS')
+    parser.add_argument('-p', '--parser', action='store_true', help='Retorna el arbol sintactico en formato Json')
+    parser.add_argument('-s', '--semantic', action='store_true', help='Retorna latabla semantica')
     args = parser.parse_args()
     if args.file:
         with open(args.file, 'r') as file:
@@ -645,28 +714,24 @@ def main():
     lexer = Lexer(input_string)
     
     if args.lexer:
+        tokens = lexer.tokens()
         with open("outputLexer.txt", "w") as file:
-            file.write(lexer.tokens())
+            for token in tokens:
+                file.write(f"{token}\n")
             
     parser = Parser(lexer)
     
     if args.parser:
+        parse = parser.parse()
         with open("outputParser.txt", "w") as file:
-            file.write(parser.parse())
+            formater_parse = json.dumps(parse, indent=4)
+            file.write(formater_parse)
             
     semantic_analyzer = SemanticAnalyzer(parser.parse())
     
     if args.semantic:
         with open("outputSemantic.txt", "w") as file:
-            file.write(lexer.tokens())
-
-        
-    # parse_tree = parser.parse()
-    # semantic_analyzer = SemanticAnalyzer(parse_tree)
-    # for token in lexer.tokens():
-    #     print(token)
-    # print(lexer.tokens())
-    print(parser.parse())
+            file.write(semantic_analyzer.getSymbolTable().__str__())
         
 
 if __name__ == '__main__':

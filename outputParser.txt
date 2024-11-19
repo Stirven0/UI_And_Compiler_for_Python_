@@ -1,0 +1,145 @@
+{
+    "type": "PROGRAM",
+    "body": [
+        {
+            "type": "IMPORT",
+            "module": "sys"
+        },
+        {
+            "type": "ASSIGNMENT",
+            "identifier": "arg",
+            "expression": {
+                "type": "MEMBER_ACCESS",
+                "object": {
+                    "type": "IDENTIFIER",
+                    "value": "sys"
+                },
+                "member": "argv"
+            }
+        },
+        {
+            "type": "ASSIGNMENT",
+            "identifier": "comand",
+            "expression": {
+                "type": "STRING",
+                "value": ""
+            }
+        },
+        {
+            "type": "FUNCTION_DEF",
+            "name": "asignacion",
+            "params": [
+                "c"
+            ],
+            "block": {
+                "type": "BLOCK",
+                "body": [
+                    {
+                        "type": "IF",
+                        "condition": {
+                            "type": "LOGICAL_OP",
+                            "operator": "or",
+                            "left": {
+                                "type": "LOGICAL_OP",
+                                "operator": "or",
+                                "left": {
+                                    "type": "LOGICAL_OP",
+                                    "operator": "or",
+                                    "left": {
+                                        "type": "LOGICAL_OP",
+                                        "operator": "or",
+                                        "left": {
+                                            "type": "EQUALITY_OP",
+                                            "operator": "==",
+                                            "left": {
+                                                "type": "IDENTIFIER",
+                                                "value": "c"
+                                            },
+                                            "right": {
+                                                "type": "STRING",
+                                                "value": "="
+                                            }
+                                        },
+                                        "right": {
+                                            "type": "EQUALITY_OP",
+                                            "operator": "==",
+                                            "left": {
+                                                "type": "IDENTIFIER",
+                                                "value": "c"
+                                            },
+                                            "right": {
+                                                "type": "STRING",
+                                                "value": "+="
+                                            }
+                                        }
+                                    },
+                                    "right": {
+                                        "type": "EQUALITY_OP",
+                                        "operator": "==",
+                                        "left": {
+                                            "type": "IDENTIFIER",
+                                            "value": "c"
+                                        },
+                                        "right": {
+                                            "type": "STRING",
+                                            "value": "-="
+                                        }
+                                    }
+                                },
+                                "right": {
+                                    "type": "EQUALITY_OP",
+                                    "operator": "==",
+                                    "left": {
+                                        "type": "IDENTIFIER",
+                                        "value": "c"
+                                    },
+                                    "right": {
+                                        "type": "STRING",
+                                        "value": "*="
+                                    }
+                                }
+                            },
+                            "right": {
+                                "type": "EQUALITY_OP",
+                                "operator": "==",
+                                "left": {
+                                    "type": "IDENTIFIER",
+                                    "value": "c"
+                                },
+                                "right": {
+                                    "type": "STRING",
+                                    "value": "/="
+                                }
+                            }
+                        },
+                        "if_block": {
+                            "type": "BLOCK",
+                            "body": [
+                                {
+                                    "type": "RETURN_STATEMENT",
+                                    "value": {
+                                        "type": "BOOLEAN",
+                                        "value": true
+                                    }
+                                }
+                            ]
+                        },
+                        "elif_blocks": [],
+                        "else_block": {
+                            "type": "BLOCK",
+                            "body": [
+                                {
+                                    "type": "RETURN_STATEMENT",
+                                    "value": {
+                                        "type": "BOOLEAN",
+                                        "value": false
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}
